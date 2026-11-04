@@ -1,0 +1,33 @@
+# O mu Bu mu?
+
+Türkçe, telefondan oynanan seçim oyunu. İki mod aynı soru havuzunu kullanır:
+
+- **Uyumunu keşfet:** Tek başına 10 soruyu tamamla, bağlantını paylaş. Arkadaşların aynı seti istedikleri zaman cevaplar. Tamamlayan oyuncuların seçimleri karşılaştırılır.
+- **Birlikte oyna:** 2–8 kişilik oda, 6 karakterlik kod, 10 soru ve soru başına 20 saniye. Herkes cevaplayınca veya süre dolunca oylar açılır. Oda sahibi sonraki soruya geçer.
+
+60 soru, 5 konu kategorisi ve her kategoriden 2 soru alan karma modu bulunur. Yüzde, iki oyuncunun da cevapladığı soruların kaçında aynı seçeneği işaretlediğini gösterir; cevapsız sorular paydaya katılmaz.
+
+## Geliştirme
+
+Node.js >=22.13 gereklidir. Bu makinedeki çalışan kurulum `/opt/homebrew/opt/node@22/bin` dizinindedir.
+
+- `npm run dev -- --hostname 127.0.0.1`: Yerel önizleme.
+- `npx tsc --noEmit`: Tür kontrolü.
+- `node scripts/check-game.mjs`: Çalışan yerel sunucuda 71 API kontrolü; iki oyuncu, gizlilik, devam etme, uyum hesabı, canlı tur, oda sahibi yetkileri ve süre aşımı. Yalnızca test amaçlı oyunlar oluşturur. Üretime karşı çalıştırmayın.
+- `npm run db:generate`: Şema değişiklikleri için yeni D1 migration üretir.
+
+Sites eklentisinin build/source/deploy yardımcılarıyla yayınlanır. `.openai/hosting.json` mevcut Site kimliğini ve `DB` bağını saklar. Aynı Site kimliğini koruyun. Üretim ve yerel veritabanları ayrıdır; yerel test oyunları yayın paketine girmez.
+
+## Dosyalar
+
+- `app/page.tsx`: Mobil arayüz, davet, lobi, oyun ve sonuç akışları.
+- `app/globals.css`: Responsive tasarım.
+- `app/questions.ts`: Kategoriler ve kararlı soru kimlikleri.
+- `app/api/game/route.ts`: Sunucuda cevap gizliliği, süre, yetki ve oyun durumu kuralları.
+- `db/schema.ts`, `drizzle/`: Kalıcı oyun kayıtları ve oyuncu cevapları.
+
+## Kimlik ve sınırlar
+
+Üyelik gerektirmeyen rastgele oyuncu anahtarı bu tarayıcıda tutulur; sunucuda yalnızca özeti saklanır. Tarayıcı verileri silinirse eski oyuncu kimliğine erişilemez. Hesaplar arasında cihaz eşitleme henüz yoktur. Davet kodunu bilenler oyuna katılabilir. Uyum modunda, setini tamamlayan katılımcılar diğer tamamlayanların cevaplarını görebilir. Canlı oyun cevapları tur sonunda oda katılımcılarına açılır.
+
+Yeni Site, Sites varsayılanı gereği yalnızca sahibine açık yayınlanır. Dışarıdan arkadaşların giriş yapabilmesi için Site erişiminin ayrıca açılması gerekir. Kod, herkese açık erişimde misafir oyununa hazırdır.

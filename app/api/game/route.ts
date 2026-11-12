@@ -41,7 +41,9 @@ async function handle(req:Request,post:boolean) {
     if(action==='create') {
       const name=cleanName(b.name); const category=categories.some(c=>c.id===b.category)?b.category:'mix';
       const kind=b.kind==='room'?'room':'blend'; const id=kind==='room'?Array.from(crypto.getRandomValues(new Uint8Array(6))).map(n=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[n%31]).join(''):crypto.randomUUID();
-      const ids=pickQuestions(category);
+      const recentRows=await db().prepare('SELECT games.questions FROM games JOIN players ON players.game = games.id WHERE players.player = ? ORDER BY games.created DESC LIMIT 4').bind(who).all<{questions:string}>();
+      const recentIds=recentRows.results.flatMap(row=>JSON.parse(row.questions) as string[]);
+      const ids=pickQuestions(category,recentIds);
       await db().batch([
         db().prepare('INSERT INTO games (id,kind,host,host_name,category,questions,status,round,deadline,created) VALUES (?,?,?,?,?,?,?,0,0,?)').bind(id,kind,who,name,category,JSON.stringify(ids),kind==='room'?'waiting':'playing',Date.now()),
         db().prepare("INSERT INTO players (game,player,name,answers,joined) VALUES (?,?,?,'[]',?)").bind(id,who,name,Date.now()),

@@ -5,7 +5,7 @@ Türkçe, telefondan oynanan seçim oyunu. İki mod aynı soru havuzunu kullanı
 - **Uyumunu keşfet:** Tek başına 10 soruyu tamamla, bağlantını paylaş. Arkadaşların aynı seti istedikleri zaman cevaplar. Tamamlayan oyuncuların seçimleri karşılaştırılır.
 - **Birlikte oyna:** 2–8 kişilik oda, 6 karakterlik kod, 10 soru ve soru başına 20 saniye. Herkes cevaplayınca veya süre dolunca oylar açılır. Oda sahibi sonraki soruya geçer.
 
-60 soru, 5 konu kategorisi ve her kategoriden 2 soru alan karma modu bulunur. Yüzde, iki oyuncunun da cevapladığı soruların kaçında aynı seçeneği işaretlediğini gösterir; cevapsız sorular paydaya katılmaz.
+720 soru ve 31 kategori bulunur: film ve dizi karakterleri, şarkıcılar ve müzisyenler, futbolcular, diğer branşlardan sporcuların yanı sıra tiyatro, kitap, müze ve sanat, ülkeler, şehirler, oyun, sosyal medya, teknoloji, arkadaşlık, ilişkiler, moda, nostalji, hayvanlar, anime ve gündelik/absürt seçimler. “Biraz her şey” ve “Gündem karması” da kategori aramasından seçilebilir. Her turda 10 soru gelir; aynı kategoride tekrar oynarken yakın geçmişte görülenler geriye atılır. Yüzde, iki oyuncunun da cevapladığı soruların kaçında aynı seçeneği işaretlediğini gösterir; cevapsız sorular paydaya katılmaz.
 
 ## Geliştirme
 

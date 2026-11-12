@@ -16,6 +16,19 @@ Node.js >=22.13 gereklidir. Bu makinedeki çalışan kurulum `/opt/homebrew/opt/
 - `node scripts/check-game.mjs`: Çalışan yerel sunucuda 116 API kontrolü; iki oyuncu, gizlilik, devam etme, uyum hesabı, canlı tur, oda sahibi yetkileri, süre aşımı, oda sahibi yokken devam, karışık setlerde içerik tekrarı ve oyun açma sınırı. Yaklaşık 40 saniye sürer. Yalnızca test amaçlı oyunlar oluşturur. Üretime karşı çalıştırmayın.
 - `npm run db:generate`: Şema değişiklikleri için yeni D1 migration üretir.
 
+### Kendi Cloudflare hesabına yayın (önerilen)
+
+1. Cloudflare panelinde bir D1 veritabanı açın (ad: `omu-bumu`) ve kimliğini kopyalayın.
+2. Workers & Pages → Create → Import a repository → bu depo.
+   - Build command: `npm run build`
+   - Deploy command: `npm run deploy:cloudflare`
+   - Değişken: `D1_DATABASE_ID` = 1. adımdaki kimlik
+3. Her `main` push'unda Cloudflare derler, migration'ları uygular ve yayınlar.
+
+Yerelden yayın: `npm run build && D1_DATABASE_ID=... CLOUDFLARE_API_TOKEN=... npm run deploy:cloudflare`. Üretim paketini yerelde denemek için `-- --dry` ile ayarı hazırlayıp `wrangler dev --config dist/server/wrangler.deploy.json --local` çalıştırılabilir; `check-game.mjs` buna `TEST_ORIGIN` ile çalıştırılır.
+
+### ChatGPT Sites (eski yol)
+
 Sites eklentisinin build/source/deploy yardımcılarıyla yayınlanır. `.openai/hosting.json` mevcut Site kimliğini ve `DB` bağını saklar. Aynı Site kimliğini koruyun. Üretim ve yerel veritabanları ayrıdır; yerel test oyunları yayın paketine girmez.
 
 ## Dosyalar

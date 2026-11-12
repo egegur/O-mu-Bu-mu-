@@ -3,6 +3,15 @@ import { categories, pickQuestions, questionMap } from '../../questions';
 
 type Game = {id:string;kind:string;host:string;host_name:string;category:string;questions:string;status:string;round:number;deadline:number;created:number};
 type Player = {game:string;player:string;name:string;answers:string;joined:number};
+// 32 karakter: 256 % 32 === 0 olduğu için her karakter eşit olasılıkla seçilir.
+const ROOM_ALPHABET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const ROUND_MS=20000;
+// Oda sahibi ortadan kaybolursa, süre bittikten bu kadar sonra herhangi bir oyuncu devam ettirebilir.
+const HOST_GRACE_MS=15000;
+// Bir oyuncu anahtarı saatte en fazla bu kadar oyun açabilir.
+const CREATE_LIMIT_PER_HOUR=30;
+// Oyunlar bu süreden sonra silinir (gizlilik metninde de yazıyor).
+const RETENTION_MS=30*24*60*60*1000;
 const json = (data:unknown,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
 const db = ()=> { if(!env.DB) throw new Error('Veritabanı bağlantısı hazırlanıyor.'); return env.DB; };
 function fail(message:string,status=400):never {throw Object.assign(new Error(message),{status});}
@@ -33,6 +42,15 @@ async function view(id:string,who:string) {
     })):[],playerCount:ps.length,
   };
 }
+async function cleanup() {
+  const old=(await db().prepare('SELECT id FROM games WHERE created < ? ORDER BY created LIMIT 200').bind(Date.now()-RETENTION_MS).all<{id:string}>()).results.map(r=>r.id);
+  if(!old.length) return;
+  const marks=old.map(()=>'?').join(',');
+  await db().batch([
+    db().prepare(`DELETE FROM players WHERE game IN (${marks})`).bind(...old),
+    db().prepare(`DELETE FROM games WHERE id IN (${marks})`).bind(...old),
+  ]);
+}
 async function handle(req:Request,post:boolean) {
   try {
     const who=await identity(req);
@@ -40,7 +58,11 @@ async function handle(req:Request,post:boolean) {
     const b=await req.json() as Record<string,any>; const action=b.action;
     if(action==='create') {
       const name=cleanName(b.name); const category=categories.some(c=>c.id===b.category)?b.category:'mix';
-      const kind=b.kind==='room'?'room':'blend'; const id=kind==='room'?Array.from(crypto.getRandomValues(new Uint8Array(6))).map(n=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[n%31]).join(''):crypto.randomUUID();
+      const kind=b.kind==='room'?'room':'blend'; const id=kind==='room'?Array.from(crypto.getRandomValues(new Uint8Array(6))).map(n=>ROOM_ALPHABET[n%ROOM_ALPHABET.length]).join(''):crypto.randomUUID();
+      const hourAgo=Date.now()-60*60*1000;
+      const created=await db().prepare('SELECT COUNT(*) AS n FROM games WHERE host = ? AND created > ?').bind(who,hourAgo).first<{n:number}>();
+      if((created?.n||0)>=CREATE_LIMIT_PER_HOUR) fail('Kısa sürede çok fazla oyun açtın. Biraz sonra tekrar dene.',429);
+      if(Math.random()<0.05) await cleanup();
       const recentRows=await db().prepare('SELECT games.questions FROM games JOIN players ON players.game = games.id WHERE players.player = ? ORDER BY games.created DESC LIMIT 4').bind(who).all<{questions:string}>();
       const recentIds=recentRows.results.flatMap(row=>JSON.parse(row.questions) as string[]);
       const ids=pickQuestions(category,recentIds);
@@ -79,12 +101,12 @@ async function handle(req:Request,post:boolean) {
       if(g.host!==who) fail('Oyunu yalnızca oda sahibi başlatabilir.',403);
       if(g.kind!=='room'||g.status!=='waiting') fail('Oyun zaten başlamış.');
       if(ps.length<2) fail('Başlamak için en az iki kişi gerekli.');
-      await db().prepare("UPDATE games SET status = 'playing', deadline = ? WHERE id = ? AND status = 'waiting'").bind(Date.now()+20000,g.id).run();
+      await db().prepare("UPDATE games SET status = 'playing', deadline = ? WHERE id = ? AND status = 'waiting'").bind(Date.now()+ROUND_MS,g.id).run();
     } else if(action==='next') {
-      if(g.host!==who) fail('Soruyu yalnızca oda sahibi ilerletebilir.',403);
       if(g.kind!=='room'||g.status!=='reveal') fail('Önce cevapları bekle.');
+      if(g.host!==who&&Date.now()<g.deadline+HOST_GRACE_MS) fail('Soruyu yalnızca oda sahibi ilerletebilir.',403);
       if(g.round+1>=count) await db().prepare("UPDATE games SET status = 'done' WHERE id = ? AND status = 'reveal' AND round = ?").bind(g.id,g.round).run();
-      else await db().prepare("UPDATE games SET status = 'playing', round = round + 1, deadline = ? WHERE id = ? AND status = 'reveal' AND round = ?").bind(Date.now()+20000,g.id,g.round).run();
+      else await db().prepare("UPDATE games SET status = 'playing', round = round + 1, deadline = ? WHERE id = ? AND status = 'reveal' AND round = ?").bind(Date.now()+ROUND_MS,g.id,g.round).run();
     } else fail('Bu işlem tanınmadı.');
     return json(await view(g.id,who));
   } catch(e:any) { return json({error:e.status?e.message:'Bağlantıda bir sorun oldu. Birazdan tekrar dene.'},e.status||500); }

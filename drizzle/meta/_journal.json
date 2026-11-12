@@ -8,6 +8,13 @@
       "when": 1793820437635,
       "tag": "0000_high_mathemanic",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1794508005792,
+      "tag": "0001_indexes",
+      "breakpoints": true
     }
   ]
 }

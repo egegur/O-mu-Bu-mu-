@@ -91,8 +91,12 @@ export const trendingIds = new Set([
   'characters-0','characters-6','characters-14','artists-1','artists-2','artists-8','artists-9',
   'footballers-1','footballers-2','footballers-3','footballers-5','athletes-0','athletes-4','athletes-11'
 ]);
+// Bazı soru çiftleri iki kategoride birden var (ör. Taylor Swift / Beyoncé). Kimlikler kalıcı olduğu için
+// silinmiyorlar; bunun yerine seçimde aynı içerik bir oyunda iki kez gelmesin diye içerik anahtarıyla eleniyor.
+export const contentKey = (q:Pick<Question,'a'|'b'>) => [q.a,q.b].map(s=>s.toLocaleLowerCase('tr').trim()).sort().join('|');
 export function pickQuestions(category:string, recentIds:string[] = []) {
-  const recentlySeen = new Set(recentIds);
+  const recentKeys = new Set(recentIds.map(id => questionMap[id]).filter(Boolean).map(contentKey));
+  const recentlySeen = { has: (id:string) => recentKeys.has(contentKey(questionMap[id])) };
   let pool = questions.filter(q => category === 'mix' ? true : category === 'trending' ? trendingIds.has(q.id) : q.category === category);
   if (category === 'mix') {
     const groups = shuffle([...new Set(pool.map(q => q.category))]);
@@ -103,5 +107,7 @@ export function pickQuestions(category:string, recentIds:string[] = []) {
     const old = shuffle(pool.filter(q => recentlySeen.has(q.id)));
     pool = [...fresh, ...old];
   }
-  return shuffle(pool.slice(0, 10)).map(q => q.id);
+  const picked:Question[] = []; const keys = new Set<string>();
+  for (const q of pool) { const key = contentKey(q); if (keys.has(key)) continue; keys.add(key); picked.push(q); if (picked.length === 10) break; }
+  return shuffle(picked).map(q => q.id);
 }

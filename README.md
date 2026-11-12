@@ -13,7 +13,7 @@ Node.js >=22.13 gereklidir. Bu makinedeki çalışan kurulum `/opt/homebrew/opt/
 
 - `npm run dev -- --hostname 127.0.0.1`: Yerel önizleme.
 - `npx tsc --noEmit`: Tür kontrolü.
-- `node scripts/check-game.mjs`: Çalışan yerel sunucuda 71 API kontrolü; iki oyuncu, gizlilik, devam etme, uyum hesabı, canlı tur, oda sahibi yetkileri ve süre aşımı. Yalnızca test amaçlı oyunlar oluşturur. Üretime karşı çalıştırmayın.
+- `node scripts/check-game.mjs`: Çalışan yerel sunucuda 116 API kontrolü; iki oyuncu, gizlilik, devam etme, uyum hesabı, canlı tur, oda sahibi yetkileri, süre aşımı, oda sahibi yokken devam, karışık setlerde içerik tekrarı ve oyun açma sınırı. Yaklaşık 40 saniye sürer. Yalnızca test amaçlı oyunlar oluşturur. Üretime karşı çalıştırmayın.
 - `npm run db:generate`: Şema değişiklikleri için yeni D1 migration üretir.
 
 Sites eklentisinin build/source/deploy yardımcılarıyla yayınlanır. `.openai/hosting.json` mevcut Site kimliğini ve `DB` bağını saklar. Aynı Site kimliğini koruyun. Üretim ve yerel veritabanları ayrıdır; yerel test oyunları yayın paketine girmez.
@@ -25,6 +25,16 @@ Sites eklentisinin build/source/deploy yardımcılarıyla yayınlanır. `.openai
 - `app/questions.ts`: Kategoriler ve kararlı soru kimlikleri.
 - `app/api/game/route.ts`: Sunucuda cevap gizliliği, süre, yetki ve oyun durumu kuralları.
 - `db/schema.ts`, `drizzle/`: Kalıcı oyun kayıtları ve oyuncu cevapları.
+
+## Oyun kuralları ve korumalar
+
+- Oda kodu 32 karakterli alfabeden (`ABCDEFGHJKLMNPQRSTUVWXYZ23456789`) eşit olasılıkla üretilir.
+- Bazı soru çiftleri iki kategoride birden var. Kimlikler kalıcı olduğu için silinmez; `pickQuestions` aynı içeriği bir oyunda iki kez seçmez ve yakın geçmişte görülen içeriği kimlikten bağımsız olarak geriye atar.
+- Oda sahibi süre bittikten 15 saniye sonra hâlâ devam etmediyse odadaki herkes sonraki soruya geçebilir.
+- Bir oyuncu anahtarı saatte en fazla 30 oyun açabilir (429).
+- 30 günden eski oyunlar, oyun açma isteklerinin yaklaşık %5'inde 200'lük gruplar halinde silinir.
+- `drizzle/0001_indexes.sql`: hız sınırı, temizlik ve son oyun sorgusu için indeksler.
+- `/gizlilik`: taslak aydınlatma metni; köşeli parantezli yerler doldurulmalı ve avukata kontrol ettirilmeli.
 
 ## Kimlik ve sınırlar
 

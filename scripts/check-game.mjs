@@ -23,6 +23,7 @@ const other=hostView.players.find(p=>!p.isMe);assert.equal(other.answers.filter(
 const locked=await call(b,{action:'answer',id,index:0,choice:1});assert.equal(locked.myAnswers[0],0);
 console.log('PASS: asynchronous invite, identical question set, hidden answers, persistence, 8/10 compatibility, locked answers.');
 let room=await call(a,{action:'create',kind:'room',name:'Ada Test',category:'daily'});const rid=room.id;
+assert.match(rid,/^[ABCDEFGHJKLMNPQRSTUVWXYZ2-9]{6}$/);
 await call(a,{action:'start',id:rid},undefined,400);
 await call(b,{action:'join',id:rid,name:'Deniz Test'});
 await call(b,{action:'start',id:rid},undefined,403);
@@ -44,5 +45,15 @@ await call(b,{action:'join',id:tid,name:'Waiting Test'});timed=await call(a,{act
 await call(a,{action:'answer',id:tid,index:0,choice:0});
 await new Promise(r=>setTimeout(r,Math.max(0,timed.deadline-Date.now()+100)));
 const expired=await call(b,{action:'answer',id:tid,index:0,choice:1});assert.equal(expired.status,'reveal');assert.equal(expired.myAnswers.length,0);
-console.log('PASS: deadline reveals unanswered round, late votes rejected.');
+await call(b,{action:'next',id:tid},undefined,403);
+await new Promise(r=>setTimeout(r,Math.max(0,timed.deadline+15000-Date.now()+200)));
+const resumed=await call(b,{action:'next',id:tid});assert.equal(resumed.round,1);assert.equal(resumed.status,'playing');
+console.log('PASS: deadline reveals unanswered round, late votes rejected, guest can continue when host is away.');
+const e=crypto.randomUUID(),f=crypto.randomUUID();
+const key=q=>[q.a,q.b].map(s=>s.toLocaleLowerCase('tr').trim()).sort().join('|');
+for(let i=0;i<12;i++){const g=await call(e,{action:'create',kind:'blend',name:'Tekrar Test',category:i%2?'mix':'trending'});assert.equal(g.questions.length,10);assert.equal(new Set(g.questions.map(key)).size,10,'duplicate content in '+g.category);}
+console.log('PASS: mixed and trending sets never repeat the same question content.');
+for(let i=0;i<30;i++)await call(f,{action:'create',kind:'room',name:'Limit Test',category:'food'});
+await call(f,{action:'create',kind:'room',name:'Limit Test',category:'food'},undefined,429);
+console.log('PASS: create rate limit.');
 console.log(`All ${checks} API assertions passed.`);

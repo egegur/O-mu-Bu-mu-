@@ -29,7 +29,7 @@ Sites eklentisinin build/source/deploy yardımcılarıyla yayınlanır. `.openai
 ## Oyun kuralları ve korumalar
 
 - Oda kodu 32 karakterli alfabeden (`ABCDEFGHJKLMNPQRSTUVWXYZ23456789`) eşit olasılıkla üretilir.
-- Bazı soru çiftleri iki kategoride birden var. Kimlikler kalıcı olduğu için silinmez; `pickQuestions` aynı içeriği bir oyunda iki kez seçmez ve yakın geçmişte görülen içeriği kimlikten bağımsız olarak geriye atar.
+- Sorular `app/question-bank.ts` içinde. Kimlik `kategori-sıra`; yeni soru yalnızca dizinin sonuna eklenir, metin değişirse konu aynı kalır. `pickQuestions` aynı içeriği bir oyunda iki kez seçmez ve yakın geçmişte görülen içeriği geriye atar.
 - Oda sahibi süre bittikten 15 saniye sonra hâlâ devam etmediyse odadaki herkes sonraki soruya geçebilir.
 - Bir oyuncu anahtarı saatte en fazla 30 oyun açabilir (429).
 - 30 günden eski oyunlar, oyun açma isteklerinin yaklaşık %5'inde 200'lük gruplar halinde silinir.
